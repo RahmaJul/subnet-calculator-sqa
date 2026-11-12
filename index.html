@@ -579,7 +579,7 @@
 
   /* ── Subnet UI ── */
   async function hitungSubnet() {
-    const ip     = document.getElementById('ip').value.trim();
+    const ip     = document.getElementById('ip').value;
     const prefix = document.getElementById('prefix').value;
     const errEl  = document.getElementById('subnet-err');
     const resEl  = document.getElementById('subnet-result');
@@ -588,19 +588,10 @@
     document.getElementById('ip').classList.remove('error-input');
 
     try {
-      // Coba endpoint API dulu
-      let data;
-      try {
-        const r = await fetch(`/api/subnet?ip=${encodeURIComponent(ip)}&prefix=${encodeURIComponent(prefix)}`);
-        if (!r.ok) {
-          const j = await r.json().catch(() => ({}));
-          throw new Error(j.detail || `HTTP ${r.status}`);
-        }
-        data = await r.json();
-      } catch (fetchErr) {
-        // Fallback: hitung lokal jika API tidak tersedia
-        if (fetchErr.message.startsWith('HTTP') || fetchErr.message.includes('detail')) throw fetchErr;
-        data = hitungLokal(ip, prefix);
+      const r = await fetch(`/api/subnet?ip=${encodeURIComponent(ip)}&prefix=${encodeURIComponent(prefix)}`);
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        throw new Error(data.detail || `HTTP ${r.status}`);
       }
 
       document.getElementById('res-mask').textContent     = data.mask;
@@ -621,7 +612,7 @@
 
   /* ── VLSM UI ── */
   async function hitungVLSM() {
-    const network = document.getElementById('vlsm-network').value.trim();
+    const network = document.getElementById('vlsm-network').value;
     const errEl   = document.getElementById('vlsm-err');
     const resEl   = document.getElementById('vlsm-result');
     errEl.hidden  = true;
@@ -636,21 +627,14 @@
     }
 
     try {
-      let hasil;
-      try {
-        const r = await fetch('/api/vlsm', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ network, kebutuhan_host: kebutuhan })
-        });
-        if (!r.ok) {
-          const j = await r.json().catch(() => ({}));
-          throw new Error(j.detail || `HTTP ${r.status}`);
-        }
-        hasil = await r.json();
-      } catch (fetchErr) {
-        if (fetchErr.message.startsWith('HTTP') || fetchErr.message.includes('detail')) throw fetchErr;
-        hasil = alokasi(network, kebutuhan);
+      const r = await fetch('/api/vlsm', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ network, kebutuhan_host: kebutuhan })
+      });
+      const hasil = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        throw new Error(hasil.detail || `HTTP ${r.status}`);
       }
 
       const tbody = document.getElementById('vlsm-tbody');
