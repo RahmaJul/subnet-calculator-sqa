@@ -103,8 +103,9 @@ def alokasi_vlsm(network_cidr: str, kebutuhan_host: list[int]) -> list[dict]:
         if isinstance(k, bool) or not isinstance(k, int) or k < 1:
             raise ValueError("Kebutuhan host harus berupa bilangan bulat >= 1")
 
-    if "/" not in network_cidr:
+    if not isinstance(network_cidr, str) or "/" not in network_cidr:
         raise ValueError("network_cidr harus dalam format IP/prefix")
+
     ip, prefix_str = network_cidr.split("/", 1)
     if not prefix_str.isdigit():
         raise ValueError("Prefix harus berupa bilangan bulat antara 0 dan 32")
@@ -124,15 +125,12 @@ def alokasi_vlsm(network_cidr: str, kebutuhan_host: list[int]) -> list[dict]:
     cursor = network_int
 
     for kebutuhan in sorted_kebutuhan:
-        block_prefix = None
-        block_cap = None
-        for p in range(30, prefix - 1, -1):
-            candidate_cap = 1 << (32 - p)
-            if candidate_cap - 2 >= kebutuhan:
-                block_prefix = p
-                block_cap = candidate_cap
-                break
-        if block_prefix is None or cursor + block_cap > network_int + block_size:
+        size = 4
+        while size < kebutuhan + 2:
+            size *= 2
+
+        block_prefix = 32 - (size.bit_length() - 1)
+        if block_prefix < prefix or cursor + size > network_int + block_size:
             raise ValueError("Total ruang alamat tidak cukup menampung seluruh kebutuhan")
 
         subnet = hitung_subnet(_int_to_ipv4(cursor), block_prefix)
@@ -140,7 +138,7 @@ def alokasi_vlsm(network_cidr: str, kebutuhan_host: list[int]) -> list[dict]:
         subnet["network_cidr"] = f"{subnet['network']}/{block_prefix}"
 
         results.append(subnet)
-        cursor += block_cap
+        cursor += size
 
     return results
 
