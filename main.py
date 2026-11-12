@@ -96,7 +96,51 @@ def hitung_subnet(ip: str, prefix: int) -> dict:
 
 
 def alokasi_vlsm(network_cidr: str, kebutuhan_host: list[int]) -> list[dict]:
-    raise NotImplementedError
+    if not isinstance(kebutuhan_host, list) or len(kebutuhan_host) == 0:
+        raise ValueError("Daftar kebutuhan host kosong")
+
+    for k in kebutuhan_host:
+        if isinstance(k, bool) or not isinstance(k, int) or k < 1:
+            raise ValueError("Kebutuhan host harus berupa bilangan bulat >= 1")
+
+    if not isinstance(network_cidr, str) or "/" not in network_cidr:
+        raise ValueError("network_cidr harus dalam format IP/prefix")
+
+    ip, prefix_str = network_cidr.split("/", 1)
+    if not prefix_str.isdigit():
+        raise ValueError("Prefix harus berupa bilangan bulat antara 0 dan 32")
+    prefix = _parse_prefix(int(prefix_str))
+
+    ip_int = _parse_ipv4(ip)
+    mask_int = _mask_from_prefix(prefix)
+    network_int = ip_int & mask_int
+
+    if network_int != ip_int:
+        raise ValueError("network_cidr bukan alamat jaringan yang valid (host bit aktif)")
+
+    block_size = 1 << (32 - prefix)
+    sorted_kebutuhan = sorted(kebutuhan_host, reverse=True)
+
+    results = []
+    cursor = network_int
+
+    for kebutuhan in sorted_kebutuhan:
+        size = 4
+        while size < kebutuhan + 2:
+            size *= 2
+
+        block_prefix = 32 - (size.bit_length() - 1)
+        if block_prefix < prefix or cursor + size > network_int + block_size:
+            raise ValueError("Total ruang alamat tidak cukup menampung seluruh kebutuhan")
+
+        subnet = hitung_subnet(_int_to_ipv4(cursor), block_prefix)
+        subnet["kebutuhan"] = kebutuhan
+        subnet["network_cidr"] = f"{subnet['network']}/{block_prefix}"
+
+        results.append(subnet)
+        cursor += size
+
+    return results
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -123,4 +167,9 @@ def api_subnet(ip: str = Query(default=""), prefix: Any = Query(default=None)):
 
 @app.post("/api/vlsm")
 def api_vlsm(payload: dict):
-    raise NotImplementedError
+    network = payload.get("network", "")
+    kebutuhan_host = payload.get("kebutuhan_host", [])
+    try:
+        return alokasi_vlsm(network, kebutuhan_host)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
