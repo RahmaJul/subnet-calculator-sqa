@@ -46,3 +46,15 @@ Keluar kode 0 bila semua pemeriksaan lulus.
 ```bash
 docker rm -f subnet-app
 ```
+
+## Deploy
+
+Aplikasi dideploy di Vercel:
+
+- URL Produksi: https://subnet-calculator-sqa-ten.vercel.app
+
+### Smoke test ke URL produksi
+
+```bash
+uv run python scripts/smoke_test.py https://subnet-calculator-sqa-ten.vercel.app
+```
