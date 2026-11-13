@@ -12,7 +12,7 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 # Salin kode aplikasi
-COPY main.py index.html ./
+COPY main.py index.html style.css ./
 
 # Layanan hosting biasanya mengisi variabel PORT; di laptop dipakai 8000
 ENV PORT=8000

@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 app = FastAPI()
 
@@ -149,6 +149,14 @@ def read_index():
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="index.html tidak ditemukan")
     return HTMLResponse(index_path.read_text(encoding="utf-8"))
+
+
+@app.get("/style.css")
+def read_style():
+    style_path = Path(__file__).parent / "style.css"
+    if not style_path.exists():
+        raise HTTPException(status_code=404, detail="style.css tidak ditemukan")
+    return Response(content=style_path.read_text(encoding="utf-8"), media_type="text/css")
 
 
 @app.get("/api/subnet")
